@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="fr" ng-app="appliCompteur">
+<head>
+<meta charset="UTF-8">
+<title>Compteur d'&eacute;crivain</title>
+<script type="text/javascript" src="js/angular.min.js"></script>
+<script type="text/javascript" src="js/angular-cookies.js"></script>
+<script type="text/javascript" src="js/compteur.js"></script>
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<link rel="stylesheet" type="text/css" href="css/theme.css" />
+</head>
+
+
+<body ng-controller="ctrlCompteur">
+
+  <header>
+    <h1>Mon compteur d'&eacute;crivain</h1>
+  </header>
+
+  <section id="login" ng-show="!loger">
+    <h2>Veuillez vous authentifier</h2>
+    <form name="loginForm" ng-submit="login()">
+      <input id="nom" type="text" placeholder="Login" ng-model="nom" required="required" />
+      <input type="submit" value="Entrer" />
+    </form>
+  </section>
+
+  <section id="graphiqueTotal" ng-show="loger">
+  </section>
+  <section id="graphique" ng-show="loger">
+  </section>
+
+  <section id="compteur" ng-show="loger">
+    <h2 id="nom">Bonjour {{nom}}</h2>
+    <div id="deconnection">
+      <input type="button" ng-show="loger" ng-click="logoff()" value="D&eacute;connection" />
+    </div>
+    <div class="clear"></div>
+    <div id="statistiques" class="cadre">
+      <label for="listeStatisiques">Tu as &eacute;crit: </label>
+      <ul id="listeStatisiques">
+        <li>
+          <span class="principal">{{user.compteur_annuel}} </span>
+          mots cette ann&eacute;e
+        </li>
+        <li>
+          <span class="principal">{{user.compteur_mensuel}} </span>
+          mots ce mois
+        </li>
+        <li>
+          <span class="principal"> {{user.compteur_quotidien}} </span>
+          mots aujourd'hui
+        </li>
+        <li>
+          <span class="principal">{{user.moyenne_mensuelle}} </span>
+          mots en moyenne par mois
+        </li>
+        <li>
+          <span class="principal">{{user.moyenne_quotidienne}} </span>
+          mots en moyenne par jour
+        </li>
+      </ul>
+    </div>
+<!-- OBJECTIFS -->    
+    <div id="objectifGlobal">
+      <h3>
+        Objectifs
+        <input type="button" id="afficheCreerObjectif" ng-click="afficherCreerObjectif()" value="+" title="Ajouter un nouvel objectif" ng-show="!creerObjectifVisible" />
+        <input type="button" id="afficheCreerObjectif" ng-click="afficherCreerObjectif()" value="-" title="Annuler" ng-show="creerObjectifVisible" />
+      </h3>
+      <div id="creationObjectif" class="espace-bas" ng-show="creerObjectifVisible">
+        <form name="creerObjectifMensuelForm" class="cadre" ng-submit="creerObjectifMensuel()" ng-show="!user.has_objectif_mensuel">
+          <label for="objectifMotsMensuel">Choisis ton objectif mensuel : </label>
+          <select id="objectifMotsMensuel" type="text" placeholder="nombre de mots" ng-model="objectifMots" required="required">
+            <option value="10000">10 000 mots</option>
+            <option value="25000">25 000 mots</option>
+            <option value="50000">50 000 mots</option>
+            <option value="80000">80 000 mots</option>
+            <option value="100000">100 000 mots</option>
+            <option value="150000">150 000 mots</option>
+            <option value="200000">200 000 mots</option>
+          </select>
+          <input id="objectifMensuelSubmit" type="submit" value="C'est parti !" />
+        </form>
+        <form name="creerObjectifForm" class="cadre" ng-submit="creerObjectif()">
+          <div>
+            <label for="objectifTitre">Titre : </label>
+            <input type="text" placeholder="titre" ng-model="objectifTitre" />
+          </div>
+          <div>
+            <label for="objectifMots">Ecrire </label>
+            <input id="objectifMots" type="text" placeholder="nombre de mots" ng-model="objectifMots" required="required" />
+            mots
+            <label for="objectifDateDebut"> entre le </label>
+            <input id="objectifDateDebut" type="text" placeholder="jj/mm/aaaa" size="10" ng-model="objectifDateDebut" ng-pattern="PATTERN.DATE" required="required"
+              value="{{date | date:'dd/MM/yyyy'}}"
+            />
+            <label for="objectifDateFin"> et le </label>
+            <input id="objectifDateFin" type="text" placeholder="jj/mm/aaaa" size="10" ng-model="objectifDateFin" ng-pattern="PATTERN.DATE" required="required" />
+            <input id="objectifSubmit" type="submit" value="C'est parti !" />
+          </div>
+        </form>
+      </div>
+      <div id="listeObjectifs">
+        <ul>
+          <li class="cadre espace-bas" ng-repeat="objectif in user.objectifs">
+            <h4>
+              {{objectif.titre}}
+              <input type="button" value="&#8776;" ng-click="modifierObjectif(objectif)" title="Dupliquer" />
+            </h4>
+            <!--             <div ng-show="objectif.date <= date"> -->
+            Ecrire
+            <span class="principal">{{objectif.nb_mots}}</span>
+            mots avant le
+            <span>{{objectif.date_fin | date:"dd/MM/yyyy"}}</span>,
+            <span ng-show="objectif.nb_mots_quotidiens > 0">
+              soit
+              <span class="principal">{{objectif.nb_mots_quotidiens}}</span>
+              par jour
+            </span>
+            <span ng-show="objectif.nb_mots_quotidiens <= 0"> objectif atteind !</span>
+            <ul ng-show="objectif.nb_mots_quotidiens > 0">
+              <li>
+                Il te reste encore
+                <span class="principal">{{objectif.nb_jour_restants}}</span>
+                jours
+              </li>
+              <li>
+                Tu as &eacute;crit
+                <span class="principal">{{objectif.compteur}}</span>
+                mots encore
+                <span class="principal">{{objectif.nb_mots - objectif.compteur}}</span>
+              </li>
+              <li ng-show="objectif.nb_mots_restants > 0">
+                Il te reste
+                <span class="principal">{{objectif.nb_mots_restants}}</span>
+                mots &agrave; &eacute;crire aujourd'hui pour atteindre cet objectif
+              </li>
+              <li ng-show="objectif.nb_mots_restants <= 0">Tu as atteinds ton objectif quotidien ! F&eacute;licitations !</li>
+            </ul>
+            <!--             </div> -->
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="projet" ng-show="loger">
+    <h3>
+      Projets
+      <input type="button" id="afficheCreerProjet" ng-click="afficherCreerProjet()" value="+"  title="Ajouter un nouveau projet" ng-show="!creerProjetVisible" />
+      <input type="button" id="afficheCreerProjet" ng-click="afficherCreerProjet()" value="-"  title="Annuler" ng-show="creerProjetVisible" />
+    </h3>
+    <div id="creationProjet" ng-show="creerProjetVisible">
+      <form name="creerProjetForm" ng-submit="creerProjet()" class="cadre espace-bas">
+        <label for="nomProjet">Titre : </label>
+        <input id="nomProjet" type="text" placeholder="nom du projet" ng-model="nouveauProjet" required="required" />
+        <input id="projetSubmit" type="submit" value="Cr&eacute;er" />
+      </form>
+    </div>
+    <div id="listeProjets">
+      <ul>
+        <li ng-repeat="projet in user.projets" class="cadre espace-bas">
+          <h4>
+            <a href="" ng-click="projet.afficherModifierProjet=!projet.afficherModifierProjet" title="Modifier" ng-show="!projet.afficherModifierProjet">{{projet.titre}}</a>
+            <form name="modifierProjetForm" ng-submit="modifierProjet(projet)" class="cadre espace-bas"  ng-show="projet.afficherModifierProjet">
+              <input type="text" id="titreProjet" placeholder="nouveau nom du projet" ng-model="projet.titre" ng-blur="projet.afficherModifierProjet=!projet.afficherModifierProjet" focus-me="projet.afficherModifierProjet" />
+            </form>
+            <input type="button" id="afficheProjet{{projet.id}}" ng-click="afficherProjet(projet)" value="v" title="D&eacute;rouler" ng-show="!projet.visible && !projet.afficherModifierProjet" />
+            <input type="button" id="afficheProjet{{projet.id}}" ng-click="afficherProjet(projet)" value="^" title="Masquer" ng-show="projet.visible && !projet.afficherModifierProjet" />
+          </h4>
+          <div ng-show="projet.visible">
+            <form name="compteur{{projet.id}}Form" ng-submit="mettreCompteurProjetAJour(projet)">
+              <div>
+                <label for="dateCompteur">Date : </label>
+                <input id="dateCompteur" type="text" placeholder="jj/mm/aaaa" ng-model="projet.dateCompteur" size="10" ng-pattern="PATTERN.DATE" required="required" />
+              </div>
+              <div>
+                <label for="nbMot{{projet.id}}Quotidien">Nombre de mots &eacute;crits pour la journ&eacute;e : </label>
+                <input id="nbMot{{projet.id}}Quotidien" name="nbMot{{projet.id}}Quotidien" type="text" placeholder="mots" ng-model="projet.nouveauxMots" ng-disabled="projet.motsSession" size="5" min-texte="500" />
+                <label for="nbMot{{projet.id}}Session"> ou pour la session : </label>
+                <input id="nbMot{{projet.id}}Session" type="text" placeholder="mots" ng-model="projet.motsSession" ng-disabled="projet.nouveauxMots" size="5" />
+                <input id="compteurSubmit" type="submit" value="Ajouter" />
+              </div>
+            </form>
+            <label for="texte{{projet.id}}">Calcul automatique :</label>
+            <textarea id="texte{{projet.id}}" ng-model="projet.texte" rows="1" cols="45"></textarea>
+            <input type="button" value="Calculer" ng-click="compterMots(projet)">
+            <div class="noscroll">
+              <div class="scroll">
+                <ul>
+                  <li ng-repeat="compteur in projet.compteurs">
+                    {{compteur.date | date:"dd/MM/yyyy"}} : {{compteur.nb_mots}} mots
+                    <span ng-show="compteur.nb_mots_supplementaire"> (+ {{compteur.nb_mots_supplementaire}} mots)</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </section>
+  <div class="clear"></div>
+</body>
+</html>
